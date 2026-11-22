@@ -59,9 +59,16 @@ assert_eq!(BAD_REQUEST, u64::MAX);
 
 ## What is proven
 
-No Kani harness covers the crate yet. The unit tests check every operation byte against each badge
-in `admits`, every reserved bit in `decode`, the round trip of `req`, and the wire values of the
-flags and the identity. The doctests run the examples above.
+Three Kani harnesses in `src/verification.rs` hold for every input, not a sample:
+
+- `decode` answers every first word without panicking, and a word it accepts is the word `req`
+  builds from the operation and length it answers. `admits` answers every badge and operation.
+- `decode` answers `None` exactly when one of bits 55 to 32 is set.
+- `admits` is the table its documentation states, for every badge and every operation.
+
+Each harness has a patch in `falsifications/` that breaks the code it checks and turns that harness
+red. The unit tests also pin the wire values of the flags and the identity, and the doctests run
+the examples above.
 
 ## Building and testing
 
@@ -78,14 +85,23 @@ that serves them.
 ### Running the proofs
 
 Install Kani 0.68.0, the version CI uses, with `cargo install --locked kani-verifier --version
-0.68.0`, then `cargo kani setup`, which downloads a model checker and so needs network access. With
-no harness in the crate, `cargo kani` prints `No proof harnesses (functions with #[kani::proof])
-were found to verify.` and exits 0.
+0.68.0`, then `cargo kani setup`, which downloads a model checker and so needs network access.
+After that, `cargo kani` runs the three harnesses in a few seconds once the crate compiles. A
+passing run also prints checks marked `UNREACHABLE` and an `internal error: entered unreachable
+code` description, which are checks proved unreachable. Only the final line, `Complete - 3
+successfully verified harnesses, 0 failures, 3 total.`, matters. To run one harness, use `cargo
+kani --harness verification::admits_follows_the_documented_badge_table --exact`.
+
+To replay one falsification patch:
+
+```sh
+git apply falsifications/verification.admits_follows_the_documented_badge_table.patch
+cargo kani --harness verification::admits_follows_the_documented_badge_table --exact   # ends VERIFICATION:- FAILED
+git checkout -- src
+```
 
 ## BUGS
 
-- No Kani harness covers `admits` or `decode` yet. Both are small enough for an exhaustive harness
-  over the operation byte and every badge.
 - The operation names keep the protocol's run-together spellings, such as `OPERATION_READLINE` and
   `OPERATION_INTRCOUNT`, and the control messages keep the `CTL_` prefix. Their names may change
   before the first release; their values will not.

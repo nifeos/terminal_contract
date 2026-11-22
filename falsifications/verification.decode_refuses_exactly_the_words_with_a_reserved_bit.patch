@@ -1,0 +1,21 @@
+Falsifies `terminal_contract::verification::decode_refuses_exactly_the_words_with_a_reserved_bit`.
+
+The defect: the reserved mask stops one bit short and leaves bit 55 out. A client can then set
+bit 55 and the terminal serves the request, so a later version cannot give that bit a meaning
+without breaking a client that already relies on it being ignored.
+
+Expected to fail: the harness's `assert_eq!`, on any word with bit 55 set and bits 54 to 32 clear.
+
+diff --git a/src/lib.rs b/src/lib.rs
+index a0b1ce1..dc39f6a 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -208,7 +208,7 @@ pub const fn len(w0: u64) -> usize {
+ }
+ 
+ /// Bits 55:32 of a request's first word, which no operation gives a meaning.
+-const RESERVED_REQUEST_BITS: u64 = ((1 << OPERATION_SHIFT) - 1) & !0xffff_ffff;
++const RESERVED_REQUEST_BITS: u64 = ((1 << (OPERATION_SHIFT - 1)) - 1) & !0xffff_ffff;
+ 
+ /// **A request's first word as a server reads it**: its operation and its length or count, or
+ /// `None` when any reserved bit (55:32) is set. A terminal answers `None` with [`BAD_REQUEST`]
