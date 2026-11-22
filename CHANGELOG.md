@@ -6,6 +6,7 @@ sentence beside it.
 ## Unreleased
 
 - First version.
+- Kani harnesses for `admits` and `decode`, each with a falsification patch.
 
 ## BUGS
 

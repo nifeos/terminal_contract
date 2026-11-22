@@ -1,0 +1,20 @@
+Falsifies `terminal_contract::verification::admits_follows_the_documented_badge_table`.
+
+The defect: the unbadged copy also admits the quiesce. Every program that holds the terminal's
+ordinary endpoint, the shell and every session among them, could then stop the terminal and leave
+it waiting for a resume that nobody sends.
+
+Expected to fail: the harness's `assert_eq!`, on badge 0 with the quiesce operation.
+
+diff --git a/src/lib.rs b/src/lib.rs
+index a0b1ce1..1c96052 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -144,6 +144,7 @@ pub const fn admits(badge: u64, operation: u64) -> bool {
+                 | OPERATION_PRINT
+                 | OPERATION_RAWMODE
+                 | OPERATION_READRAW
++                | OPERATION_QUIESCE
+         ),
+         RAW_ONLY_BADGE => matches!(operation, OPERATION_RAWMODE | OPERATION_READRAW),
+         STDIN_BADGE => operation == OPERATION_READ_LINE_BYTES,

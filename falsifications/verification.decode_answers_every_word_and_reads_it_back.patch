@@ -1,0 +1,21 @@
+Falsifies `terminal_contract::verification::decode_answers_every_word_and_reads_it_back`.
+
+The defect: the length is read as one less than the low word, which underflows on a request whose
+length is zero. Every terminal server decodes through `decode`, so a zero-length write or a poll
+would panic the terminal instead of being served.
+
+Expected to fail: the subtraction's overflow check, on any word whose low 32 bits are zero.
+
+diff --git a/src/lib.rs b/src/lib.rs
+index a0b1ce1..1042e5e 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -204,7 +204,7 @@ pub const fn operation(w0: u64) -> u64 {
+ }
+ /// The length/count of a request word.
+ pub const fn len(w0: u64) -> usize {
+-    (w0 & 0xffff_ffff) as usize
++    ((w0 & 0xffff_ffff) - 1) as usize
+ }
+ 
+ /// Bits 55:32 of a request's first word, which no operation gives a meaning.
